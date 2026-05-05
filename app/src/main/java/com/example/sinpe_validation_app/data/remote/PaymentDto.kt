@@ -15,3 +15,18 @@ data class SmsRequestDto(
     @SerializedName("smsContent") val smsContent: String,
     @SerializedName("receivedAt") val receivedAt: String
 )
+
+data class CreateOrderRequestDto(
+    val amount: Double,
+    val description: String?
+)
+
+data class OrderDto(
+    val idOrder: Int,
+    val orderCode: String,
+    val amount: Double,
+    val status: String,
+    val createdAt: String,
+    val expiresAt: String,
+    val description: String?
+)

@@ -84,11 +84,6 @@ class SinpeApiService : Service() {
                 )
                 sendSmsToBackend(smsDto)
 
-                // Parsear y enviar como pago (opcional, manteniendo lógica anterior si es necesaria)
-                val paymentDto = parseSms(body, timestamp)
-                if (paymentDto != null) {
-                    sendToBackend(paymentDto)
-                }
 
                 Log.i(TAG, "SMS procesado correctamente")
             } catch (e: Exception) {

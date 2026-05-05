@@ -11,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.example.sinpe_validation_app.ui.screens.InboxScreen
+import com.example.sinpe_validation_app.ui.screens.MainScreen
 import com.example.sinpe_validation_app.ui.theme.Sinpe_validationappTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             Sinpe_validationappTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    InboxScreen()
+                    MainScreen()
                 }
             }
         }
