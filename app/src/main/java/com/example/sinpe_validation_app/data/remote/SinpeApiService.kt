@@ -70,12 +70,22 @@ class SinpeApiService : Service() {
                 //Guardar local
                 saveSmsLocally(sender, body, timestamp)
 
-                //Enviar al back
-                val dto = parseSms(body, timestamp)
-                if (dto != null) {
-                    sendToBackend(dto)
-                } else {
-                    Log.w(TAG, "No se pudo parsear el SMS: el formato no coincide")
+                val isoDate = Instant.ofEpochMilli(timestamp)
+                    .atOffset(ZoneOffset.UTC)
+                    .format(DateTimeFormatter.ISO_INSTANT)
+
+                // Enviar SMS original al backend para procesamiento
+                val smsDto = SmsRequestDto(
+                    senderName = sender,
+                    smsContent = body,
+                    receivedAt = isoDate
+                )
+                sendSmsToBackend(smsDto)
+
+                // Parsear y enviar como pago (opcional, manteniendo lógica anterior si es necesaria)
+                val paymentDto = parseSms(body, timestamp)
+                if (paymentDto != null) {
+                    sendToBackend(paymentDto)
                 }
 
                 Log.i(TAG, "SMS procesado correctamente")
@@ -151,10 +161,24 @@ class SinpeApiService : Service() {
                 Log.i(TAG, "Backend recibió el pago exitosamente. Referencia: ${response.body()?.sinpeReference}")
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Sin error body"
-                Log.e(TAG, "Error en backend: Código ${response.code()} - $errorMsg")
+                Log.e(TAG, "Error en backend (payment): Código ${response.code()} - $errorMsg")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Fallo de red al conectar con el backend: ${e.message}")
+            Log.e(TAG, "Fallo de red al conectar con el backend (payment): ${e.message}")
+        }
+    }
+
+    private suspend fun sendSmsToBackend(dto: SmsRequestDto) {
+        try {
+            val response = RetrofitClient.instance.sendSms(dto)
+            if (response.isSuccessful) {
+                Log.i(TAG, "Backend recibió el SMS exitosamente")
+            } else {
+                val errorMsg = response.errorBody()?.string() ?: "Sin error body"
+                Log.e(TAG, "Error en backend (sms): Código ${response.code()} - $errorMsg")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Fallo de red al conectar con el backend (sms): ${e.message}")
         }
     }
 

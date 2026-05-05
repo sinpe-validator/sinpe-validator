@@ -9,3 +9,9 @@ data class ReceivedSmsDto(
     @SerializedName("description") val description: String,
     @SerializedName("receivedAt") val receivedAt: String
 )
+
+data class SmsRequestDto(
+    @SerializedName("senderName") val senderName: String,
+    @SerializedName("smsContent") val smsContent: String,
+    @SerializedName("receivedAt") val receivedAt: String
+)
