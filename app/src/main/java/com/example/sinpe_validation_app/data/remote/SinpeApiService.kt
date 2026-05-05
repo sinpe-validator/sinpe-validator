@@ -63,10 +63,12 @@ class SinpeApiService : Service() {
         val body   = intent.getStringExtra(EXTRA_BODY)   ?: return START_STICKY
         val timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, System.currentTimeMillis())
 
+        println("DEBUG: [SinpeApiService] Iniciando procesamiento de SMS de: $sender")
         Log.i(TAG, "Procesando SMS de: $sender")
 
         serviceScope.launch {
             try {
+                println("DEBUG: [SinpeApiService] Guardando localmente...")
                 //Guardar local
                 saveSmsLocally(sender, body, timestamp)
 
@@ -156,28 +158,36 @@ class SinpeApiService : Service() {
 
     private suspend fun sendToBackend(dto: ReceivedSmsDto) {
         try {
+            println("DEBUG: [SinpeApiService] Enviando PAGO al backend: ${dto.sinpeReference}")
             val response = RetrofitClient.instance.sendPayment(dto)
             if (response.isSuccessful) {
+                println("DEBUG: [SinpeApiService] PAGO enviado con ÉXITO")
                 Log.i(TAG, "Backend recibió el pago exitosamente. Referencia: ${response.body()?.sinpeReference}")
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Sin error body"
+                println("DEBUG: [SinpeApiService] ERROR en backend (pago): ${response.code()}")
                 Log.e(TAG, "Error en backend (payment): Código ${response.code()} - $errorMsg")
             }
         } catch (e: Exception) {
+            println("DEBUG: [SinpeApiService] FALLO de red (pago): ${e.message}")
             Log.e(TAG, "Fallo de red al conectar con el backend (payment): ${e.message}")
         }
     }
 
     private suspend fun sendSmsToBackend(dto: SmsRequestDto) {
         try {
+            println("DEBUG: [SinpeApiService] Enviando SMS original al backend...")
             val response = RetrofitClient.instance.sendSms(dto)
             if (response.isSuccessful) {
+                println("DEBUG: [SinpeApiService] SMS original enviado con ÉXITO")
                 Log.i(TAG, "Backend recibió el SMS exitosamente")
             } else {
                 val errorMsg = response.errorBody()?.string() ?: "Sin error body"
+                println("DEBUG: [SinpeApiService] ERROR en backend (sms): ${response.code()}")
                 Log.e(TAG, "Error en backend (sms): Código ${response.code()} - $errorMsg")
             }
         } catch (e: Exception) {
+            println("DEBUG: [SinpeApiService] FALLO de red (sms): ${e.message}")
             Log.e(TAG, "Fallo de red al conectar con el backend (sms): ${e.message}")
         }
     }

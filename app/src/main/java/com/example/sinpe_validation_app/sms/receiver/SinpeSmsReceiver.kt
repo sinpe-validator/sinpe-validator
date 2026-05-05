@@ -40,13 +40,16 @@ class SinpeSmsReceiver : BroadcastReceiver() {
             val body   = sms.messageBody?.trim()        ?: continue
             val timestamp = sms.timestampMillis
 
+            println("DEBUG: [SinpeSmsReceiver] SMS recibido de: $sender")
             Log.d(TAG, "SMS recibido de: $sender en el timestamp: $timestamp")
 
             if (!isFromOfficialBank(sender)) {
+                println("DEBUG: [SinpeSmsReceiver] Remitente '$sender' ignorado")
                 Log.d(TAG, "Remitente '$sender' ignorado — no es número oficial de banco")
                 continue
             }
 
+            println("DEBUG: [SinpeSmsReceiver] SMS SINPE detectado! Enviando a procesamiento...")
             Log.i(TAG, "SMS SINPE detectado de '$sender' — enviando al backend")
             forwardToBackend(context, sender, body, timestamp)
         }
