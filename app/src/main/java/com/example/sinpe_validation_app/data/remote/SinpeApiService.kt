@@ -14,7 +14,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
-//Procesa los mensajes y los guarda en la BD local, para mostrarlos en la interfaz
 class SinpeApiService : Service() {
 
     companion object {
@@ -69,14 +68,12 @@ class SinpeApiService : Service() {
         serviceScope.launch {
             try {
                 println("DEBUG: [SinpeApiService] Guardando localmente...")
-                //Guardar local
                 saveSmsLocally(sender, body, timestamp)
 
                 val isoDate = Instant.ofEpochMilli(timestamp)
                     .atOffset(ZoneOffset.UTC)
                     .format(DateTimeFormatter.ISO_INSTANT)
 
-                // Enviar SMS original al backend para procesamiento
                 val smsDto = SmsRequestDto(
                     senderName = sender,
                     smsContent = body,
@@ -108,64 +105,6 @@ class SinpeApiService : Service() {
             smsDao.insertSms(smsEntity)
         } catch (e: Exception) {
             Log.e(TAG, "Error guardando en BD: ${e.message}")
-        }
-    }
-
-    private fun parseSms(body: String, timestamp: Long): ReceivedSmsDto? {
-        return try {
-            val amountPattern = Pattern.compile("(?:recibido|received)\\s+([\\d,]+\\.\\d{2})", Pattern.CASE_INSENSITIVE)
-            val senderPattern = Pattern.compile("de\\s+(.*?)\\s+por\\s+SINPE\\s+Movil", Pattern.CASE_INSENSITIVE)
-            val refPattern = Pattern.compile("Referencia\\s+(\\d+)", Pattern.CASE_INSENSITIVE)
-            val descPattern = Pattern.compile("Movil,\\s+(.*?)\\.\\s+Referencia", Pattern.CASE_INSENSITIVE)
-
-            val amountMatcher = amountPattern.matcher(body)
-            val senderMatcher = senderPattern.matcher(body)
-            val refMatcher = refPattern.matcher(body)
-            val descMatcher = descPattern.matcher(body)
-
-            if (amountMatcher.find() && senderMatcher.find() && refMatcher.find()) {
-                val amountStr = amountMatcher.group(1)?.replace(",", "") ?: "0.00"
-                val amount = amountStr.toDouble()
-                val senderName = senderMatcher.group(1)?.trim() ?: "Desconocido"
-                val reference = refMatcher.group(1) ?: ""
-                val description = if (descMatcher.find()) descMatcher.group(1)?.trim() ?: "" else ""
-
-                val isoDate = Instant.ofEpochMilli(timestamp)
-                    .atOffset(ZoneOffset.UTC)
-                    .format(DateTimeFormatter.ISO_INSTANT)
-
-                ReceivedSmsDto(
-                    senderName = senderName,
-                    amount = amount,
-                    sinpeReference = reference,
-                    description = description,
-                    receivedAt = isoDate
-                )
-            } else {
-                Log.d(TAG, "El mensaje no cumple con el patrón SINPE esperado")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error parseando SMS: ${e.message}")
-            null
-        }
-    }
-
-    private suspend fun sendToBackend(dto: ReceivedSmsDto) {
-        try {
-            println("DEBUG: [SinpeApiService] Enviando PAGO al backend: ${dto.sinpeReference}")
-            val response = RetrofitClient.instance.sendPayment(dto)
-            if (response.isSuccessful) {
-                println("DEBUG: [SinpeApiService] PAGO enviado con ÉXITO")
-                Log.i(TAG, "Backend recibió el pago exitosamente. Referencia: ${response.body()?.sinpeReference}")
-            } else {
-                val errorMsg = response.errorBody()?.string() ?: "Sin error body"
-                println("DEBUG: [SinpeApiService] ERROR en backend (pago): ${response.code()}")
-                Log.e(TAG, "Error en backend (payment): Código ${response.code()} - $errorMsg")
-            }
-        } catch (e: Exception) {
-            println("DEBUG: [SinpeApiService] FALLO de red (pago): ${e.message}")
-            Log.e(TAG, "Fallo de red al conectar con el backend (payment): ${e.message}")
         }
     }
 
