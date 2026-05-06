@@ -6,8 +6,6 @@ import retrofit2.http.POST
 import retrofit2.http.GET
 
 interface SinpeBackendApi {
-    @POST("api/payment")
-    suspend fun sendPayment(@Body payment: ReceivedSmsDto): Response<ReceivedSmsDto>
 
     @POST("api/sms")
     suspend fun sendSms(@Body smsRequest: SmsRequestDto): Response<Void>
