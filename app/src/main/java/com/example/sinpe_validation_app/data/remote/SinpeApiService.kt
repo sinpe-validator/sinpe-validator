@@ -37,7 +37,7 @@ class SinpeApiService : Service() {
             val channel = android.app.NotificationChannel(
                 "sms_service",
                 "Procesamiento de SMS",
-                android.app.NotificationManager.IMPORTANCE_LOW
+                android.app.NotificationManager.IMPORTANCE_HIGH
             )
             val manager = getSystemService(android.app.NotificationManager::class.java)
             manager.createNotificationChannel(channel)
@@ -116,8 +116,20 @@ class SinpeApiService : Service() {
                 println("DEBUG: [SinpeApiService] SMS original enviado con ÉXITO")
                 Log.i(TAG, "Backend recibió el SMS exitosamente")
             } else {
+
                 val errorMsg = response.errorBody()?.string() ?: "Sin error body"
+
+                if (response.code() == 409) {
+
+                    println("DEBUG: [SinpeApiService] FRAUDE DETECTADO")
+
+                    showFraudNotification()
+
+                    Log.w(TAG, "Referencia duplicada detectada")
+                }
+
                 println("DEBUG: [SinpeApiService] ERROR en backend (sms): ${response.code()}")
+
                 Log.e(TAG, "Error en backend (sms): Código ${response.code()} - $errorMsg")
             }
         } catch (e: Exception) {
@@ -125,6 +137,23 @@ class SinpeApiService : Service() {
             Log.e(TAG, "Fallo de red al conectar con el backend (sms): ${e.message}")
         }
     }
+    private fun showFraudNotification() {
 
+        val notification = androidx.core.app.NotificationCompat.Builder(this, "sms_service")
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle("Fraude detectado")
+            .setContentText("Se detectó una referencia SINPE duplicada.")
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        val notificationManager =
+            getSystemService(android.app.NotificationManager::class.java)
+
+        notificationManager.notify(
+            System.currentTimeMillis().toInt(),
+            notification
+        )
+    }
     override fun onBind(intent: Intent?): IBinder? = null
 }
